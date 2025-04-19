@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
+import { useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement } from "@stripe/react-stripe-js";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -32,7 +32,7 @@ const Payment = () => {
       // 2. Confirm Card Payment
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
-          card: elements.getElement(CardElement),
+          card: elements.getElement(CardNumberElement),
         },
       });
 
@@ -56,26 +56,53 @@ const Payment = () => {
 
   return (
     <form
-      onSubmit={handlePaymentSubmit}
-      className="max-w-md mx-auto bg-white shadow-lg p-6 rounded-lg mt-10 space-y-6"
-    >
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">Payment Details</h2>
+  onSubmit={handlePaymentSubmit}
+  className="max-w-lg mx-auto mt-16 bg-white rounded-xl shadow-xl p-8 space-y-6 border border-gray-100"
+>
+  <h2 className="text-3xl font-semibold text-center text-gray-800">Payment Details</h2>
 
-      <div className="mb-4">
-        <label className="block mb-1 font-medium text-gray-700">Card Details</label>
-        <div className="border p-3 rounded-md shadow-sm">
-          <CardElement />
-        </div>
+  {/* Card Number */}
+  <div>
+    <label className="block text-gray-700 text-sm font-medium mb-1">Card Number</label>
+    <div className="border rounded-md p-3 bg-gray-50 shadow-inner focus-within:ring-2 focus-within:ring-blue-500 transition">
+      <CardNumberElement
+        options={{ style: { base: { fontSize: '16px' } } }}
+      />
+    </div>
+  </div>
+
+  {/* Expiry Date & CVC */}
+  <div className="grid grid-cols-2 gap-4">
+    <div>
+      <label className="block text-gray-700 text-sm font-medium mb-1">Expiry Date</label>
+      <div className="border rounded-md p-3 bg-gray-50 shadow-inner focus-within:ring-2 focus-within:ring-blue-500 transition">
+        <CardExpiryElement
+          options={{ style: { base: { fontSize: '16px' } } }}
+        />
       </div>
+    </div>
+    <div>
+      <label className="block text-gray-700 text-sm font-medium mb-1">CVC</label>
+      <div className="border rounded-md p-3 bg-gray-50 shadow-inner focus-within:ring-2 focus-within:ring-blue-500 transition">
+        <CardCvcElement
+          options={{ style: { base: { fontSize: '16px' } } }}
+        />
+      </div>
+    </div>
+  </div>
 
-      <button
-        type="submit"
-        disabled={!stripe || isProcessing}
-        className="w-full bg-blue-600 text-white py-3 rounded-md font-bold hover:bg-blue-700 transition duration-300 disabled:opacity-50"
-      >
-        {isProcessing ? "Processing..." : `Pay $${product?.price}`}
-      </button>
-    </form>
+  <button
+    type="submit"
+    disabled={!stripe || isProcessing}
+    className={`w-full py-3 text-white font-semibold rounded-md transition duration-300 ${
+      isProcessing
+        ? 'bg-gray-400 cursor-not-allowed'
+        : 'bg-blue-600 hover:bg-blue-700'
+    }`}
+  >
+    {isProcessing ? "Processing..." : `Pay $${product?.price}`}
+  </button>
+</form>
   );
 };
 
