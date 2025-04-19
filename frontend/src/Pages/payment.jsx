@@ -1,117 +1,79 @@
-import  { useState, useEffect } from 'react';
-import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
-import axios from 'axios';
+import { useState } from "react";
+import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
+import axios from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Payment = () => {
-  const [amount, setAmount] = useState(5000); // Amount in cents (5000 = $50)
-  const [paymentInfo, setPaymentInfo] = useState({
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-  });
-  const [errors, setErrors] = useState({});
   const stripe = useStripe();
   const elements = useElements();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Handle input change
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setPaymentInfo((prevInfo) => ({
-      ...prevInfo,
-      [name]: value,
-    }));
-  };
+  const { product, shippingInfo, paymentMethod } = location.state || {};
 
-  // Validate form before submission
-  const validateForm = () => {
-    let valid = true;
-    let newErrors = {};
-    if (!paymentInfo.cardNumber) {
-      newErrors.cardNumber = "Card number is required.";
-      valid = false;
-    }
-    if (!paymentInfo.expiryDate) {
-      newErrors.expiryDate = "Expiry date is required.";
-      valid = false;
-    }
-    if (!paymentInfo.cvv) {
-      newErrors.cvv = "CVV is required.";
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+  const [isProcessing, setIsProcessing] = useState(false);
+  const amount = product?.price * 100; // amount in cents
 
-  // Handle payment submission
   const handlePaymentSubmit = async (event) => {
     event.preventDefault();
+    if (!stripe || !elements || !product) return;
 
-    if (!validateForm()) {
-      return;
-    }
+    setIsProcessing(true);
+    try {
 
-    if (!stripe || !elements) {
-      return;
-    }
+      // 1. Create Payment Intent
+      const { data } = await axios.post("http://localhost:5000/api/payments/create-payment-intent", {
+        amount,
+        
+      });
 
-    // Call backend to create PaymentIntent and get clientSecret
-    const { data } = await axios.post('http://localhost:5000/api/payments/create-payment-intent', {
-      amount: amount,
-    });
+      const clientSecret = data.clientSecret;
 
-    const clientSecret = data.clientSecret;
+      // 2. Confirm Card Payment
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement),
+        },
+      });
 
-    // Confirm payment with Stripe
-    const result = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: elements.getElement(CardElement),
-      },
-    });
+      // 3. Handle Result
+      if (result.error) {
+        alert(result.error.message);
+      } else if (result.paymentIntent.status === "succeeded") {
+        alert("✅ Payment successful!");
 
-    if (result.error) {
-      console.log(result.error.message);
-    } else {
-      if (result.paymentIntent.status === 'succeeded') {
-        alert('Payment successful!');
-        // Perform post-payment actions (e.g., update order status)
+        navigate("/order-success", {
+          state: { product, shippingInfo, paymentMethod },
+        });
       }
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
-    <form onSubmit={handlePaymentSubmit}>
-      <div>
-        <label>Card Number</label>
-        <CardElement />
-        {errors.cardNumber && <p>{errors.cardNumber}</p>}
+    <form
+      onSubmit={handlePaymentSubmit}
+      className="max-w-md mx-auto bg-white shadow-lg p-6 rounded-lg mt-10 space-y-6"
+    >
+      <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">Payment Details</h2>
+
+      <div className="mb-4">
+        <label className="block mb-1 font-medium text-gray-700">Card Details</label>
+        <div className="border p-3 rounded-md shadow-sm">
+          <CardElement />
+        </div>
       </div>
 
-      <div>
-        <label>Expiry Date</label>
-        <input
-          type="text"
-          name="expiryDate"
-          value={paymentInfo.expiryDate}
-          onChange={handleInputChange}
-          placeholder="MM/YY"
-        />
-        {errors.expiryDate && <p>{errors.expiryDate}</p>}
-      </div>
-
-      <div>
-        <label>CVV</label>
-        <input
-          type="text"
-          name="cvv"
-          value={paymentInfo.cvv}
-          onChange={handleInputChange}
-          placeholder="123"
-        />
-        {errors.cvv && <p>{errors.cvv}</p>}
-      </div>
-
-      <button type="submit" disabled={!stripe}>
-        Pay Now
+      <button
+        type="submit"
+        disabled={!stripe || isProcessing}
+        className="w-full bg-blue-600 text-white py-3 rounded-md font-bold hover:bg-blue-700 transition duration-300 disabled:opacity-50"
+      >
+        {isProcessing ? "Processing..." : `Pay $${product?.price}`}
       </button>
     </form>
   );

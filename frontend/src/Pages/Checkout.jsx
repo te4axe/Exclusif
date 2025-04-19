@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify"; // Import react-toastify
-import { FaCreditCard, FaCashRegister } from "react-icons/fa"; // Import Cash Register icon for Cash on Delivery
+import { toast } from "react-toastify";
+import { FaCreditCard, FaCashRegister } from "react-icons/fa";
 
 function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the product passed from the Details page
   const product = location.state?.product;
 
-  // States to track shipping info and payment method
   const [shippingInfo, setShippingInfo] = useState({
     name: "",
     address: "",
@@ -22,7 +20,7 @@ function Checkout() {
   });
 
   const [paymentMethod, setPaymentMethod] = useState("creditCard");
-  const [currentStep, setCurrentStep] = useState(1); // Track current step (1 for personal info, 2 for payment)
+  const [currentStep, setCurrentStep] = useState(1);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -33,35 +31,32 @@ function Checkout() {
   };
 
   const handleNextStep = () => {
-    // Validate personal info before moving to the payment step
     for (let key in shippingInfo) {
       if (!shippingInfo[key]) {
         alert(`${key} is required`);
         return;
       }
     }
-
-    // Show success toast
     toast.success("Personal Information Successfully Submitted!");
-
-    // Move to the payment step
     setCurrentStep(2);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validate if the payment method is selected
     if (!paymentMethod) {
       alert("Please select a payment method");
       return;
     }
 
-    // After validation, navigate to the payment page
-    navigate("/payment", { state: { shippingInfo, product, paymentMethod } });
+    if (paymentMethod === "creditCard") {
+      navigate("/payment", { state: { shippingInfo, product, paymentMethod } });
+    } else {
+      toast.success("✅ Order confirmed. You will pay with Cash on Delivery.");
+      navigate("/order-success", { state: { shippingInfo, product, paymentMethod } });
+    }
   };
 
-  // Calculate total price (including shipping)
   const totalPrice = product?.price;
 
   return (
@@ -71,109 +66,31 @@ function Checkout() {
           {currentStep === 1 ? "Billing Details" : "Payment Details"}
         </h2>
 
-        {/* Step 1: Personal Info Form */}
         {currentStep === 1 && (
           <form onSubmit={handleNextStep} className="space-y-8">
             <div className="space-y-4">
-              <div>
-                <label className="block text-lg font-semibold text-gray-700">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={shippingInfo.name}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-              </div>
+              {[
+                { label: "Full Name", name: "name" },
+                { label: "Street Address", name: "address" },
+                { label: "City", name: "city" },
+                { label: "Postal Code", name: "postalCode" },
+                { label: "Country", name: "country" },
+                { label: "Phone Number", name: "phone" },
+                { label: "Email Address", name: "email", type: "email" },
+              ].map(({ label, name, type = "text" }) => (
+                <div key={name}>
+                  <label className="block text-lg font-semibold text-gray-700">{label}</label>
+                  <input
+                    type={type}
+                    name={name}
+                    value={shippingInfo[name]}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  />
+                </div>
+              ))}
 
-              <div>
-                <label className="block text-lg font-semibold text-gray-700">
-                  Street Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={shippingInfo.address}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold text-gray-700">
-                  City
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={shippingInfo.city}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold text-gray-700">
-                  Postal Code
-                </label>
-                <input
-                  type="text"
-                  name="postalCode"
-                  value={shippingInfo.postalCode}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold text-gray-700">
-                  Country
-                </label>
-                <input
-                  type="text"
-                  name="country"
-                  value={shippingInfo.country}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold text-gray-700">
-                  Phone Number
-                </label>
-                <input
-                  type="text"
-                  name="phone"
-                  value={shippingInfo.phone}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold text-gray-700">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={shippingInfo.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-
-              {/* Next Button */}
               <div className="flex justify-center mt-8">
                 <button
                   type="button"
@@ -187,7 +104,6 @@ function Checkout() {
           </form>
         )}
 
-        {/* Step 2: Payment Method */}
         {currentStep === 2 && (
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="mt-6">
@@ -224,39 +140,6 @@ function Checkout() {
               </div>
             </div>
 
-            {/* Credit Card Information */}
-            {paymentMethod === "creditCard" && (
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="block text-lg font-semibold text-gray-700">Credit Card Number</label>
-                  <input
-                    type="text"
-                    placeholder="1234 5678 9876 5432"
-                    className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                  />
-                </div>
-                <div className="mt-4 flex gap-6">
-                  <div className="w-1/2">
-                    <label className="block text-lg font-semibold text-gray-700">CVV</label>
-                    <input
-                      type="text"
-                      placeholder="CVV"
-                      className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                  <div className="w-1/2">
-                    <label className="block text-lg font-semibold text-gray-700">Expiry Date</label>
-                    <input
-                      type="text"
-                      placeholder="MM / YY"
-                      className="w-full p-4 mt-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Submit Order Button */}
             <div className="flex justify-center mt-8">
               <button
                 type="submit"
@@ -268,7 +151,6 @@ function Checkout() {
           </form>
         )}
 
-        {/* Product Image and Total */}
         <div className="mt-8 p-4 bg-gray-50 rounded-lg shadow-md">
           <h3 className="text-lg font-semibold text-gray-800">Order Summary</h3>
           <div className="flex items-center space-x-4 mt-4">
