@@ -7,10 +7,28 @@ from sklearn.metrics.pairwise import cosine_similarity
 import time
 from bson import ObjectId
 
-app = Flask(__name__)  # ✅
-CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
 
-# --- 🔗 Connexion MongoDB ---
+# Util function to recursively convert ObjectId to string in any dict
+def convert_objectid_to_str(obj):
+    if isinstance(obj, list):
+        return [convert_objectid_to_str(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {
+            key: convert_objectid_to_str(value)
+            for key, value in obj.items()
+        }
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    else:
+        return obj
+
+
+
+
+
+app = Flask(__name__)  # ✅
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
+
 MONGO_URI = "mongodb+srv://aymanraisse7:QQjjz29Hu8RWqXEh@cluster0.945tp.mongodb.net/Products?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(MONGO_URI)
 db = client["Products"]
@@ -108,7 +126,8 @@ def recommend():
 
     results = get_similar_products_by_category(category, current_id=current_id)
 
-    return jsonify(results)
+    return jsonify(convert_objectid_to_str(results))
+
 
 # --- 🚀 Lancer le serveur Flask ---
 if __name__ == "__main__":  # ✅

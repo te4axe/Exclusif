@@ -39,38 +39,45 @@ function Details() {
     if (product?.category && product._id) {
         setLoading(true);
         const fetchRecommendations = async () => {
-            try {
-                const res = await axios.post("http://localhost:5001/recommendations", {
-                    category: product.category,
-                    product_id: product._id,
+          try {
+            console.log("Sending request to:", "http://localhost:5001/recommendations");
+            console.log("With data:", { category: product.category, product_id: product._id });
+            
+            const res = await axios.post("http://localhost:5001/recommendations", {
+              category: product.category,
+              product_id: product._id,
+            }, {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              withCredentials: false, // Ensure this is set if you don't want cookies sent
+            });
+          
+            console.log('Recommendation data:', res.data);  // Log to check the data
+
+            if (Array.isArray(res.data)) {
+                const updatedRecommendations = res.data.map((rec) => {
+                  const fullImageUrl = rec.image?.startsWith("http") 
+                  ? rec.image 
+                  : `http://localhost:5000${rec.image}`;
+                  console.log("Image test:", rec.image);
+
+                    return { ...rec, image: fullImageUrl };
                 });
-
-                console.log('Recommendation data:', res.data);  // Log to check the data
-
-                if (Array.isArray(res.data)) {
-                    const updatedRecommendations = res.data.map((rec) => {
-                        const fullImageUrl = rec.image
-                            ? `${window.location.protocol}//${window.location.host}${rec.image}`
-                            : "http://localhost:5000/uploads/default-image.jpg";  // Default image if none exists
-
-                        return { ...rec, image: fullImageUrl };
-                    });
-                    setRecommendations(updatedRecommendations);
-                } else {
-                    setRecommendations([]);
-                }
-            } catch (error) {
-                console.error("Error fetching recommendations:", error);
-                toast.error("Error fetching recommendations.");
-            } finally {
-                setLoading(false);
+                setRecommendations(updatedRecommendations);
+            } else {
+                setRecommendations([]);
             }
+          } catch (error) {
+            console.error("Error fetching recommendations:", error);
+            toast.error("Error fetching recommendations.");
+          } finally {
+            setLoading(false);
+          }
         };
         fetchRecommendations();
     }
-}, [product]);
-
- 
+  }, [product]);
 
   // Early return while loading or if product is null
   if (loading) return <div className="flex justify-center items-center h-screen text-2xl text-gray-700">Loading...</div>;
@@ -221,13 +228,11 @@ function Details() {
                     -{rec.discount}%
                   </span>
                 )}
-               <img
-  src={rec.image && rec.image.startsWith("http://localhost:5173http://localhost:5000") 
-    ? rec.image.replace("http://localhost:5173http://localhost:5000", "http://localhost:5000")
-    : rec.image || "http://localhost:5000/uploads/default-image.jpg"}
-  alt={rec.name}
-  className="h-40 w-full object-cover rounded mb-4"
-/>
+                <img
+                  src={rec.image || "http://localhost:5000/uploads/default-image.jpg"}
+                  alt={rec.name}
+                  className="h-40 w-full object-cover rounded mb-4"
+                />
                 <h3 className="font-semibold text-lg">{rec.name}</h3>
                 <div className="flex items-center space-x-2 mt-2">
                   {renderStars(rec.rating)}
