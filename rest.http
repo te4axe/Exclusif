@@ -1,0 +1,10 @@
+GET "http://localhost:5000/uploads/your-image.jpg";
+POST  "http://localhost:5000/api/login",{
+    {
+  "email": "lamisse@example.com",
+  "password": "1212"
+}
+}
+
+
+
