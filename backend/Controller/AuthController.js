@@ -62,7 +62,15 @@ export const Register = async (req, res) => {
   
       // Generate a JWT token
       const token = jwt.sign(
-        { id: user._id, role: user.role },
+        {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          age: user.age,
+          country: user.country,
+          gender: user.gender
+        },
         process.env.JWT_SECRET,
         { expiresIn: '1h' }
       );

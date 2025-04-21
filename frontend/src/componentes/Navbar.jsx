@@ -24,11 +24,17 @@ function Navbar() {
 
 
   useEffect(() => {
-    // Dkhl userName men localStorage awla backend
     const token = localStorage.getItem("token");
     if (token) {
-      const decodedToken = jwt_decode(token);
-      setUserName(decodedToken.name); // Replace with actual value if needed
+      try {
+        const decodedToken = jwt_decode(token);
+        setUserName(decodedToken.name); // ممكن حتى userRole هنا إلا بغيتي
+        setUserRole(decodedToken.role); // لو كان عندك الدور فالـ token
+      } catch (error) {
+        console.error("JWT decode error in Navbar:", error);
+        // تقدر تمسح الـ token إذا كان فاسد
+        localStorage.removeItem("token");
+      }
     }
   }, []);
 

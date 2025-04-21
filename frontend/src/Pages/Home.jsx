@@ -13,7 +13,7 @@ import Pagination from "../componentes/Pagination";
 import CategoryLinks from "../componentes/CategoryLinks";
 function Home() {
   const { fetchProduct, products } = useProductStore();
-  
+  const [personalizedProducts, setPersonalizedProducts] = useState([]);
   const [searchTerm, ] = useState(""); 
   const [filteredProducts, setFilteredProducts] = useState([]); 
   const [userRole, setUserRole] = useState(null); 
@@ -22,6 +22,7 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1); 
   const [productsPerPage] = useState(8); 
   const [currentSlide, setCurrentSlide] = useState(0); 
+  
   
   // Banner slides data
   const bannerSlides = [
@@ -93,25 +94,114 @@ function Home() {
     return () => clearInterval(interval);
   }, [currentSlide]);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const decodedToken = jwt_decode(token);
-      setUserRole(decodedToken.role); 
+// إضافة تدقيق حالة المستخدم
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      const decoded = jwt_decode(token);
+      console.log("DEBUG: Full token contents in Home:", decoded);
+      console.log("DEBUG: Demographic data:", {
+        age: decoded.age, 
+        ageType: typeof decoded.age,
+        gender: decoded.gender,
+        country: decoded.country
+      });
+    } catch (err) {
+      console.error("ERROR: Token decode failed in Home:", err);
     }
-  }, []);
+  } else {
+    console.log("DEBUG: No token found in localStorage");
+  }
+}, []);
 
-  useEffect(() => {
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      const user = jwt_decode(token);
+      setUserRole(user.role);
+      
+      // Ensure age is properly converted to a number
+      let userAge = user.age;
+      if (typeof userAge === 'string') {
+        userAge = parseInt(userAge, 10);
+      }
+      
+      // Debug the exact values
+      console.log("DEBUG: Data for recommendations:", {
+        age: userAge,
+        gender: user.gender, 
+        country: user.country
+      });
+      
+      // Check if we have valid data for recommendations
+      if (userAge && user.gender && user.country) {
+        console.log("DEBUG: Making recommendation request");
+        
+        fetch("http://localhost:5001/personalized-recommendations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            age: userAge,
+            gender: user.gender,
+            country: user.country
+          }),
+        })
+        .then(response => {
+          console.log("DEBUG: Response status:", response.status);
+          if (!response.ok) {
+            return response.text().then(text => {
+              console.error("Server error details:", text);
+              throw new Error(`Server error: ${response.status}`);
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log("DEBUG: Received recommendations data:", data);
+          if (Array.isArray(data) && data.length > 0) {
+            setPersonalizedProducts(data);
+            console.log("DEBUG: Set personalized products state with", data.length, "items");
+          } else {
+            console.log("DEBUG: No recommendations received or empty array");
+          }
+        })
+        .catch(err => {
+          console.error("ERROR: Failed to fetch recommendations:", err);
+        });
+      } else {
+        console.warn("WARN: Missing user demographics for recommendations:", {
+          hasAge: Boolean(userAge),
+          hasGender: Boolean(user.gender), 
+          hasCountry: Boolean(user.country)
+        });
+      }
+    } catch (err) {
+      console.error("ERROR: Failed to process token for recommendations:", err);
+    }
+  }
+}, []);
+   
+
+
+
+
+
+
+useEffect(() => {
+  if (products.length === 0) {
     setLoading(true);
     fetchProduct()
-      .then(() => {
-        setLoading(false);
-      })
+      .then(() => setLoading(false))
       .catch(() => {
         setLoading(false);
         setError("Failed to load products");
       });
-  }, [fetchProduct]);
+  }
+}, [fetchProduct, products.length]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -214,14 +304,26 @@ function Home() {
           <div className="max-w-7xl mx-auto px-6 py-12">
             {/* Get Started Message */}
             <div className="bg-gray-200 py-12">
-  <div className="text-center">
-    <h3 className="text-3xl font-bold text-gray-800 mb-4">Explore Our Popular Products</h3>
-    <p className="text-lg text-gray-600 mb-6">We have a wide selection of quality items. Click below to start exploring!</p>
-    <Link to="/register" className="bg-yellow-500 text-white px-6 py-3 rounded-full text-lg shadow-md hover:bg-yellow-600 transition duration-300">
-      Get Started
-    </Link>
+            {!userRole ? (
+  <div className="bg-gray-200 py-12">
+    <div className="text-center">
+      <h3 className="text-3xl font-bold text-gray-800 mb-4">Explore Our Popular Products</h3>
+      <p className="text-lg text-gray-600 mb-6">We have a wide selection of quality items. Click below to start exploring!</p>
+      <Link to="/register" className="bg-yellow-500 text-white px-6 py-3 rounded-full text-lg shadow-md hover:bg-yellow-600 transition duration-300">
+        Get Started
+      </Link>
+    </div>
   </div>
+) : (
+  <div className="bg-gray-200 py-12">
+    <div className="text-center">
+      <h3 className="text-3xl font-bold text-gray-800 mb-4">Welcome Back!</h3>
+      <p className="text-lg text-gray-600 mb-6">Start exploring personalized product recommendations.</p>
+    </div>
+  </div>
+)}
 </div>
+
             <h2 className="text-4xl font-extrabold text-gray-800 mb-8">This Month</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
               {currentProducts.map((product) => (
@@ -237,6 +339,26 @@ function Home() {
               pageNumbers={pageNumbers}
               paginate={paginate}
             /><br/>
+            {/* Personalized Recommendations */}
+{/* Personalized Recommendations Section */}
+{personalizedProducts && personalizedProducts.length > 0 ? (
+  <div className="mt-16">
+    <h2 className="text-4xl font-extrabold text-gray-800 mb-8">Pour Vous</h2>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      {personalizedProducts.map((product) => (
+        <div key={product._id} className="relative">
+          <ProductCard product={product} userRole={userRole} />
+        </div>
+      ))}
+    </div>
+  </div>
+) : userRole ? (
+  <div className="mt-16">
+    <h2 className="text-4xl font-extrabold text-gray-800 mb-8">Recommendations</h2>
+    <p className="text-gray-600">Loading your personalized recommendations...</p>
+  </div>
+) : null}
+
          <NewArrival />
     {/* New Section for Features */}
     <div className="flex justify-center space-x-10 bg-gray-100 py-8 mt-12">

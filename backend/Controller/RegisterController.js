@@ -1,6 +1,7 @@
 
 import Register from "../models/Register.js"
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
 
 export const registerUser = async (req, res) => {
     try {
@@ -25,21 +26,27 @@ export const registerUser = async (req, res) => {
       const newUser = new Register({ name,role, country,age,gender, email, password: hashedPassword });
   
       await newUser.save();
-      res.status(201).json({ success: true, message: "Utilisateur enregistré avec succès" });
+      const token = jwt.sign(
+        {
+          id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          age: newUser.age,
+          gender: newUser.gender,
+          country: newUser.country,
+        },
+        process.env.JWT_SECRET || "secretkey",
+        { expiresIn: "7d" }
+      );
+      
+      res.status(201).json({ success: true, message: "Utilisateur enregistré avec succès", token });
     } catch (error) {
       console.error("Erreur lors de l'inscription :", error.message);
       res.status(500).json({ success: false, message: "Erreur serveur" });
     }
   };
-export const getUsers = async (req, res) => {
-    try {
-      const users = await Register.find();
-      res.status(200).json({ success: true, data: users });
-    } catch (error) {
-      console.error("Erreur lors de la récupération des utilisateurs :", error.message);
-      res.status(500).json({ success: false, message: "Erreur serveur" });
-    }
-  };
+
   export const login = async (req, res) => {
     const { email, password } = req.body;
   
@@ -56,8 +63,21 @@ export const getUsers = async (req, res) => {
         return res.status(400).json({ success: false, message: "Mot de passe incorrect" });
       }
   
-      res.status(200).json({ success: true, message: "Connexion réussie", user });
-    } catch (error) {
+      const token = jwt.sign(
+        {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          age: user.age,
+          gender: user.gender,
+          country: user.country,
+        },
+        process.env.JWT_SECRET || "secretkey", // عوضها بـ secret ديالك فـ .env
+        { expiresIn: "7d" }
+      );
+      
+      res.status(200).json({ success: true, token });    } catch (error) {
       console.error("Erreur lors de la connexion :", error.message);
       res.status(500).json({ success: false, message: "Erreur serveur" });
     }

@@ -11,6 +11,9 @@ import AuthRoutes from "./routes/AuthRoutes.js";
 import UserRoutes from "./routes/UserRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import AiRoutes from "./routes/AiRoutes.js";
+import userRoutes from "./routes/Profile.js";
+import actionRoutes from "./routes/actionRoutes.js"
+
 
 // Setup
 dotenv.config();
@@ -34,6 +37,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/users", UserRoutes);
 app.use("/api", AuthRoutes);
 app.use("/api", AiRoutes);
+app.use("/api/user", userRoutes); 
+app.use("/", actionRoutes);
 
 // ✅ STRIPE PAYMENT ROUTE
 app.post("/api/payments/create-payment-intent", async (req, res) => {
@@ -74,6 +79,8 @@ app.use((err, req, res, next) => {
     message: err.message || "Internal Server Error",
   });
 });
+
+
 
 // Server start
 const PORT = process.env.PORT || 5000;
