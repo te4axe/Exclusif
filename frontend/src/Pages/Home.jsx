@@ -1,54 +1,34 @@
 import { useEffect, useState } from "react";
 import { useProductStore } from "../store/product";
 import ProductCard from "../componentes/ProductCard";
-import { ToastContainer,  } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import jwt_decode from "jwt-decode";
 import { Link } from "react-router-dom";
 import { CiDeliveryTruck } from "react-icons/ci";
-import { FaHeadphonesAlt } from "react-icons/fa";
+import { FaHeadphonesAlt, FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { GrValidate } from "react-icons/gr";
 import NewArrival from "../componentes/NewArrival";
 import Pagination from "../componentes/Pagination";
-import CategoryLinks from "../componentes/CategoryLinks";
-import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import SidebarProductFilter from "../componentes/ProductFilter";
 
 function Home() {
+  // State and store hooks
   const { fetchProduct, products } = useProductStore();
   const [personalizedProducts, setPersonalizedProducts] = useState([]);
-  const [searchTerm, ] = useState(""); 
-  const [filteredProducts, setFilteredProducts] = useState([]); 
-  const [userRole, setUserRole] = useState(null); 
-  const [, setLoading] = useState(false); 
-  const [, setError] = useState(null); 
-  const [currentPage, setCurrentPage] = useState(1); 
-  const [productsPerPage] = useState(8); 
-  const [currentSlide, setCurrentSlide] = useState(0); 
+  const [searchTerm] = useState("");
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [userRole, setUserRole] = useState(null);
+  const [, setLoading] = useState(false);
+  const [, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(8);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [personalizedPage, setPersonalizedPage] = useState(0);
   const personalizedPerPage = 4;
+  const [filteredThisMonthProducts, setFilteredThisMonthProducts] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
 
-  const paginatedPersonalized = personalizedProducts.slice(
-    personalizedPage * personalizedPerPage,
-    (personalizedPage + 1) * personalizedPerPage
-  );
-  
-  const nextPersonalized = () => {
-    setPersonalizedPage((prev) =>
-      (prev + 1) * personalizedPerPage >= personalizedProducts.length
-        ? 0
-        : prev + 1
-    );
-  };
-  
-  const prevPersonalized = () => {
-    setPersonalizedPage((prev) =>
-      prev === 0
-        ? Math.floor((personalizedProducts.length - 1) / personalizedPerPage)
-        : prev - 1
-    );
-  };
-  
-  
   // Banner slides data
   const bannerSlides = [
     {
@@ -98,7 +78,29 @@ function Home() {
     },
   ];
 
-  // Handle slide navigation
+  // Personalized products pagination
+  const paginatedPersonalized = personalizedProducts.slice(
+    personalizedPage * personalizedPerPage,
+    (personalizedPage + 1) * personalizedPerPage
+  );
+
+  const nextPersonalized = () => {
+    setPersonalizedPage((prev) =>
+      (prev + 1) * personalizedPerPage >= personalizedProducts.length
+        ? 0
+        : prev + 1
+    );
+  };
+
+  const prevPersonalized = () => {
+    setPersonalizedPage((prev) =>
+      prev === 0
+        ? Math.floor((personalizedProducts.length - 1) / personalizedPerPage)
+        : prev - 1
+    );
+  };
+
+  // Banner carousel navigation
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev === bannerSlides.length - 1 ? 0 : prev + 1));
   };
@@ -119,115 +121,68 @@ function Home() {
     return () => clearInterval(interval);
   }, [currentSlide]);
 
-// إضافة تدقيق حالة المستخدم
-useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    try {
-      const decoded = jwt_decode(token);
-      console.log("DEBUG: Full token contents in Home:", decoded);
-      console.log("DEBUG: Demographic data:", {
-        age: decoded.age, 
-        ageType: typeof decoded.age,
-        gender: decoded.gender,
-        country: decoded.country
-      });
-    } catch (err) {
-      console.error("ERROR: Token decode failed in Home:", err);
-    }
-  } else {
-    console.log("DEBUG: No token found in localStorage");
-  }
-}, []);
-
-useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    try {
-      const user = jwt_decode(token);
-      setUserRole(user.role);
-      
-      // Ensure age is properly converted to a number
-      let userAge = user.age;
-      if (typeof userAge === 'string') {
-        userAge = parseInt(userAge, 10);
-      }
-      
-      // Debug the exact values
-      console.log("DEBUG: Data for recommendations:", {
-        age: userAge,
-        gender: user.gender, 
-        country: user.country
-      });
-      
-      // Check if we have valid data for recommendations
-      if (userAge && user.gender && user.country) {
-        console.log("DEBUG: Making recommendation request");
+  // Check user authentication and role
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded = jwt_decode(token);
+        setUserRole(decoded.role);
         
-        fetch("http://localhost:5001/personalized-recommendations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            age: userAge,
-            gender: user.gender,
-            country: user.country
-          }),
-        })
-        .then(response => {
-          console.log("DEBUG: Response status:", response.status);
-          if (!response.ok) {
-            return response.text().then(text => {
-              console.error("Server error details:", text);
-              throw new Error(`Server error: ${response.status}`);
-            });
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log("DEBUG: Received recommendations data:", data);
-          if (Array.isArray(data) && data.length > 0) {
-            setPersonalizedProducts(data);
-            console.log("DEBUG: Set personalized products state with", data.length, "items");
-          } else {
-            console.log("DEBUG: No recommendations received or empty array");
-          }
-        })
-        .catch(err => {
-          console.error("ERROR: Failed to fetch recommendations:", err);
-        });
-      } else {
-        console.warn("WARN: Missing user demographics for recommendations:", {
-          hasAge: Boolean(userAge),
-          hasGender: Boolean(user.gender), 
-          hasCountry: Boolean(user.country)
-        });
+        let userAge = decoded.age;
+        if (typeof userAge === 'string') {
+          userAge = parseInt(userAge, 10);
+        }
+        
+        if (userAge && decoded.gender && decoded.country) {
+          fetch("http://localhost:5001/personalized-recommendations", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              age: userAge,
+              gender: decoded.gender,
+              country: decoded.country
+            }),
+          })
+          .then(response => {
+            if (!response.ok) {
+              return response.text().then(text => {
+                throw new Error(`Server error: ${response.status}`);
+              });
+            }
+            return response.json();
+          })
+          .then(data => {
+            if (Array.isArray(data) && data.length > 0) {
+              setPersonalizedProducts(data);
+            }
+          })
+          .catch(err => {
+            console.error("ERROR: Failed to fetch recommendations:", err);
+          });
+        }
+      } catch (err) {
+        console.error("ERROR: Failed to process token for recommendations:", err);
       }
-    } catch (err) {
-      console.error("ERROR: Failed to process token for recommendations:", err);
     }
-  }
-}, []);
-   
+  }, []);
 
+  // Fetch products if not already loaded
+  useEffect(() => {
+    if (products.length === 0) {
+      setLoading(true);
+      fetchProduct()
+        .then(() => setLoading(false))
+        .catch(() => {
+          setLoading(false);
+          setError("Failed to load products");
+        });
+    }
+  }, [fetchProduct, products.length]);
 
-
-
-
-
-useEffect(() => {
-  if (products.length === 0) {
-    setLoading(true);
-    fetchProduct()
-      .then(() => setLoading(false))
-      .catch(() => {
-        setLoading(false);
-        setError("Failed to load products");
-      });
-  }
-}, [fetchProduct, products.length]);
-
+  // Filter products based on search term
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchTerm.trim()) {
@@ -243,30 +198,51 @@ useEffect(() => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm, products]);
 
+  // Extract categories and set initial filtered products
+  useEffect(() => {
+    if (products.length > 0) {
+      const categories = [...new Set(products.map(product => product.category))];
+      setAllCategories(categories);
+      setFilteredThisMonthProducts(products);
+    }
+  }, [products]);
+
+  // Pagination logic
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filteredProducts.length > 0
     ? filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct)
-    : products.slice(indexOfFirstProduct, indexOfLastProduct);
+    : filteredThisMonthProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const pageNumbers = [];
-  for (let i = 1; i <= Math.ceil((filteredProducts.length > 0 ? filteredProducts.length : products.length) / productsPerPage); i++) {
+  for (let i = 1; i <= Math.ceil((filteredProducts.length > 0 ? filteredProducts.length : filteredThisMonthProducts.length) / productsPerPage); i++) {
     pageNumbers.push(i);
   }
 
   return (
-    <div className="bg-white min-h-screen font-sans">
+    <div className="bg-gray-50 min-h-screen font-sans">
       <ToastContainer position="top-right" autoClose={3000} />
+      <div className="flex flex-col md:flex-row">
+        {/* Left side categories - Hidden on mobile */}
+        <div className="hidden md:block md:w-1/5 border-r border-gray-200 p-4 bg-white">
+          <div className="mt-8">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-4">
+              Filtrer les produits
+            </h2>
+            <SidebarProductFilter 
+              products={products}
+              setFilteredProducts={setFilteredThisMonthProducts}
+              categories={allCategories}
+            />
+          </div>
+        </div>
 
-      <div className="flex">
-        {/* Left side categories */}
-       
-              <CategoryLinks />
+        {/* Main content */}
         <div className="w-full md:w-4/5">
           {/* Banner carousel */}
-          <div className="relative overflow-hidden h-64 md:h-96">
+          <div className="relative overflow-hidden h-64 md:h-96 rounded-lg mx-4 mt-4 shadow-lg">
             {bannerSlides.map((slide, index) => (
               <div 
                 key={slide.id}
@@ -280,10 +256,10 @@ useEffect(() => {
                 ></div>
 
                 <div className="container mx-auto px-6 md:px-12 flex items-center relative z-10">
-                  <div className="w-1/2">
-                    <h3 className="text-xl md:text-2xl font-light">{slide.subtitle}</h3>
-                    <h2 className="text-3xl md:text-5xl font-bold my-2">{slide.title}</h2>
-                    <button className="mt-4 px-4 py-2 bg-white text-gray-900 font-medium rounded flex items-center">
+                  <div className="w-full md:w-1/2 bg-black bg-opacity-50 p-6 rounded-lg backdrop-blur-sm">
+                    <h3 className="text-xl md:text-2xl font-light mb-2">{slide.subtitle}</h3>
+                    <h2 className="text-3xl md:text-5xl font-bold my-2 leading-tight">{slide.title}</h2>
+                    <button className="mt-4 px-6 py-3 bg-white text-gray-900 font-medium rounded-full flex items-center hover:bg-gray-100 transition duration-300 shadow-md">
                       {slide.buttonText}
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -297,19 +273,17 @@ useEffect(() => {
             {/* Navigation arrows */}
             <button 
               onClick={prevSlide}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/50 hover:bg-white/70 rounded-full p-3 z-10"
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/50 hover:bg-white/70 rounded-full p-3 z-10 transition duration-300"
+              aria-label="Previous slide"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <FaArrowLeft className="h-6 w-6" />
             </button>
             <button 
               onClick={nextSlide}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/50 hover:bg-white/70 rounded-full p-3 z-10"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/50 hover:bg-white/70 rounded-full p-3 z-10 transition duration-300"
+              aria-label="Next slide"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <FaArrowRight className="h-6 w-6" />
             </button>
 
             {/* Indicator dots */}
@@ -318,110 +292,139 @@ useEffect(() => {
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
-                  className={`w-2 h-2 rounded-full ${
-                    index === currentSlide ? "bg-white" : "bg-white/50"
+                  className={`w-3 h-3 rounded-full transition duration-300 ${
+                    index === currentSlide ? "bg-white w-6" : "bg-white/50"
                   }`}
+                  aria-label={`Go to slide ${index + 1}`}
                 ></button>
               ))}
             </div>
           </div>
+
           {/* Products section */}
-          <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             {/* Get Started Message */}
-            <div className="bg-gray-200 py-12">
-            {!userRole ? (
-  <div className="bg-gray-200 py-12">
-    <div className="text-center">
-    <h3 className="text-3xl font-bold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-4">
-    Explore Our Popular Products
-  </h3>      <p className="text-lg text-gray-600 mb-6">We have a wide selection of quality items. Click below to start exploring!</p>
-      <Link to="/register" className="bg-yellow-500 text-white px-6 py-3 rounded-full text-lg shadow-md hover:bg-yellow-600 transition duration-300">
-        Get Started
-      </Link>
-    </div>
-  </div>
-) : (
-  <div className="bg-gray-200 py-12">
-    <div className="text-center">
-      <h3 className="text-3xl font-bold text-gray-800 mb-4">Welcome Back!</h3>
-      <p className="text-lg text-gray-600 mb-6">Start exploring personalized product recommendations.</p>
-    </div>
-  </div>
-)}
-</div>
-{/* Personalized Recommendations Section */}
-{personalizedProducts && personalizedProducts.length > 0 && (
-  <div className="mt-16 relative">
- <h2 className="text-4xl font-extrabold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-8">
-  Pour Vous
-</h2>
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 py-12 rounded-xl shadow-inner mb-12">
+              <div className="text-center max-w-3xl mx-auto">
+                {!userRole ? (
+                  <>
+                    <h3 className="text-3xl font-bold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-4">
+                      Explore Our Popular Products
+                    </h3>
+                    <p className="text-lg text-gray-600 mb-6">
+                      We have a wide selection of quality items. Click below to start exploring!
+                    </p>
+                    <Link 
+                      to="/register" 
+                      className="inline-block bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-full text-lg font-medium shadow-lg hover:shadow-xl transition duration-300 hover:from-orange-600 hover:to-red-600"
+                    >
+                      Get Started
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-3xl font-bold text-gray-800 mb-4">Welcome Back!</h3>
+                    <p className="text-lg text-gray-600 mb-6">
+                      Start exploring personalized product recommendations just for you.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
 
-  {/* Arrows Navigation */}
-  <button
-    onClick={prevPersonalized}
-    className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow rounded-full p-2 hover:bg-gray-200"
-  >
-    <FaArrowLeft className="text-xl text-gray-700" /> {/* استخدام الأيقونة الجديدة */}
-  </button>
-
-  {/* Products Grid */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8">
-    {paginatedPersonalized.map((product) => (
-      <ProductCard key={product._id} product={product} userRole={userRole} />
-    ))}
-  </div>
-
-  <button
-    onClick={nextPersonalized}
-    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow rounded-full p-2 hover:bg-gray-200"
-  >
-    <FaArrowRight className="text-xl text-gray-700" /> {/* استخدام الأيقونة الجديدة */}
-  </button>
-</div>
-
-)}<br/>
-
-
-
-<h2 className="text-4xl font-extrabold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-8">This Month</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-              {currentProducts.map((product) => (
-                <div key={product._id} className="relative">
-                  <ProductCard product={product} userRole={userRole} />
+            {/* Personalized Recommendations Section */}
+            {personalizedProducts && personalizedProducts.length > 0 && (
+              <div className="mt-16 relative">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-4xl font-extrabold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text">
+                    Pour Vous
+                  </h2>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={prevPersonalized}
+                      className="bg-white shadow rounded-full p-3 hover:bg-gray-100 transition duration-300"
+                      aria-label="Previous recommendations"
+                    >
+                      <FaArrowLeft className="text-lg text-gray-700" />
+                    </button>
+                    <button
+                      onClick={nextPersonalized}
+                      className="bg-white shadow rounded-full p-3 hover:bg-gray-100 transition duration-300"
+                      aria-label="Next recommendations"
+                    >
+                      <FaArrowRight className="text-lg text-gray-700" />
+                    </button>
+                  </div>
                 </div>
-              ))}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {paginatedPersonalized.map((product) => (
+                    <ProductCard key={product._id} product={product} userRole={userRole} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* This Month Products */}
+            <div className="mt-16">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-4xl font-extrabold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text">
+                  This Month
+                </h2>
+                {filteredProducts.length > 0 && (
+                  <span className="text-sm text-gray-500">
+                    {filteredProducts.length} products found
+                  </span>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {currentProducts.map((product) => (
+                  <ProductCard key={product._id} product={product} userRole={userRole} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {pageNumbers.length > 1 && (
+                <div className="mt-12">
+                  <Pagination
+                    currentPage={currentPage}
+                    pageNumbers={pageNumbers}
+                    paginate={paginate}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Pagination */}
-            <Pagination
-              currentPage={currentPage}
-              pageNumbers={pageNumbers}
-              paginate={paginate}
-            /><br/>
-            {/* Personalized Recommendations */}
+            {/* New Arrivals */}
+            <div className="mt-16">
+              <NewArrival />
+            </div>
 
-
-
-         <NewArrival />
-    {/* New Section for Features */}
-    <div className="flex justify-center space-x-10 bg-gray-100 py-8 mt-12">
-              <div className="text-center">
-                <CiDeliveryTruck className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                <h4 className="font-bold text-lg">FREE AND FAST DELIVERY</h4>
-                <p className="text-sm">Free delivery for all orders over $140</p>
+            {/* Features Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 bg-white rounded-xl shadow-md p-8 mt-12">
+              <div className="text-center p-6 hover:bg-gray-50 rounded-lg transition duration-300">
+                <div className="bg-orange-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+                  <CiDeliveryTruck className="w-8 h-8 text-orange-500" />
+                </div>
+                <h4 className="font-bold text-lg mb-2">FREE AND FAST DELIVERY</h4>
+                <p className="text-gray-600">Free delivery for all orders over $140</p>
               </div>
-              <div className="text-center">
-                <FaHeadphonesAlt className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                <h4 className="font-bold text-lg">24/7 CUSTOMER SERVICE</h4>
-                <p className="text-sm">Friendly 24/7 customer support</p>
+              <div className="text-center p-6 hover:bg-gray-50 rounded-lg transition duration-300">
+                <div className="bg-blue-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+                  <FaHeadphonesAlt className="w-8 h-8 text-blue-500" />
+                </div>
+                <h4 className="font-bold text-lg mb-2">24/7 CUSTOMER SERVICE</h4>
+                <p className="text-gray-600">Friendly 24/7 customer support</p>
               </div>
-              <div className="text-center">
-                <GrValidate className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-                <h4 className="font-bold text-lg">MONEY BACK GUARANTEE</h4>
-                <p className="text-sm">We return money within 30 days</p>
+              <div className="text-center p-6 hover:bg-gray-50 rounded-lg transition duration-300">
+                <div className="bg-green-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+                  <GrValidate className="w-8 h-8 text-green-500" />
+                </div>
+                <h4 className="font-bold text-lg mb-2">MONEY BACK GUARANTEE</h4>
+                <p className="text-gray-600">We return money within 30 days</p>
               </div>
             </div>
-            
           </div>
         </div>
       </div>
