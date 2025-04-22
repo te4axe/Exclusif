@@ -13,6 +13,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import AiRoutes from "./routes/AiRoutes.js";
 import userRoutes from "./routes/Profile.js";
 import actionRoutes from "./routes/actionRoutes.js"
+import ProfileRoutes from "./routes/Profile.js";
 
 
 // Setup
@@ -38,6 +39,8 @@ app.use("/api/users", UserRoutes);
 app.use("/api", AuthRoutes);
 app.use("/api", AiRoutes);
 app.use("/api/user", userRoutes); 
+app.use('/api/users', ProfileRoutes);
+
 app.use("/", actionRoutes);
 
 // ✅ STRIPE PAYMENT ROUTE
