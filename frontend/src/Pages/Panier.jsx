@@ -1,18 +1,24 @@
 import { useCartStore } from "../store/cart";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 
 function Panier() {
   const { cart, removeFromCart, updateQuantity } = useCartStore();
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shipping = 0;
   const finalTotal = totalPrice + shipping;
+  const navigate = useNavigate();
+
+  const handleBuyNow = () => {
+    navigate("/checkout", { state: { cart } }); // Send full cart instead of a single product
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-6">
       <ToastContainer position="top-right" autoClose={3000} />
-      
+
       <h1 className="text-4xl font-bold text-center mb-6">🛒 Shopping Cart</h1>
 
       {cart.length === 0 ? (
@@ -74,6 +80,7 @@ function Panier() {
                 ))}
               </tbody>
             </table>
+
             <div className="flex justify-between mt-6">
               <Link to="/" className="border px-4 py-2 rounded-md shadow-md hover:bg-gray-200">Return To Shop</Link>
               <button className="border px-4 py-2 bg-blue-500 text-white rounded-md shadow-md hover:bg-blue-600">Update Cart</button>
@@ -100,7 +107,12 @@ function Panier() {
                 <p>Total:</p>
                 <p>${finalTotal.toFixed(2)}</p>
               </div>
-              <button className="mt-4 w-full bg-green-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-green-600 transition">Proceed to Checkout</button>
+              <button
+                onClick={handleBuyNow}
+                className="mt-4 w-full bg-green-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-green-600 transition"
+              >
+                Proceed to Checkout
+              </button>
             </div>
           </div>
         </div>

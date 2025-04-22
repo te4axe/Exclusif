@@ -14,6 +14,8 @@ import AiRoutes from "./routes/AiRoutes.js";
 import userRoutes from "./routes/Profile.js";
 import actionRoutes from "./routes/actionRoutes.js"
 import ProfileRoutes from "./routes/Profile.js";
+import passport from "passport";
+import session from 'express-session';
 
 
 // Setup
@@ -32,6 +34,19 @@ app.use(cors());
 // Static files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');  // ou 'unsafe-none' pour plus de flexibilité
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp'); // Peut être utilisé pour le contrôle des ressources
+  next();
+});
+
+app.use(session({
+  secret: 'ton_secret', // Utilise une clé secrète pour signer les sessions
+  resave: false,        // Ne pas resauvegarder la session si elle n'a pas été modifiée
+  saveUninitialized: false, // Ne pas sauvegarder les sessions non initialisées
+  cookie: { secure: false } // Utilise true si tu as un environnement HTTPS
+}));
+
 // API routes
 app.use("/api/products", ProductRoutes);
 app.use("/api/orders", orderRoutes);
@@ -40,6 +55,9 @@ app.use("/api", AuthRoutes);
 app.use("/api", AiRoutes);
 app.use("/api/user", userRoutes); 
 app.use('/api/users', ProfileRoutes);
+
+app.use(passport.initialize()); // Initialize passport for authentication
+app.use(passport.session()); // Initialize session support for passport
 
 app.use("/", actionRoutes);
 

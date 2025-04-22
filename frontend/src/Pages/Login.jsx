@@ -102,7 +102,8 @@ useEffect(() => {
       const googleToken = response.credential; // Example of how you would get the token.
       
       // Send token to backend for validation and user authentication
-      const res = await axios.post("http://localhost:5000/api/google-login", { token: googleToken });
+      const res = await axios.post("http://localhost:5000/api/auth/google/callback", { token: googleToken });
+
       const { token } = res.data;
       localStorage.setItem("token", token);
       try {
@@ -184,14 +185,15 @@ useEffect(() => {
         </div>
 
         {/* Google Login */}
-        <GoogleOAuthProvider clientId="715090951545-28e5hls0rgn4mjatucod3qol8a4vrcgl.apps.googleusercontent.com">
-          <GoogleLogin
-            onSuccess={responseGoogle}
-            onError={() => console.log('Login Failed')}
-            cookiePolicy={'single_host_origin'}
-            className="w-full flex items-center justify-center p-3 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-200 transition"
-          />
-        </GoogleOAuthProvider>
+        <GoogleOAuthProvider clientId="95872693443-5hbop4agfons9mhdf5521glk04rgdo5d.apps.googleusercontent.com">
+  <GoogleLogin
+    onSuccess={responseGoogle}
+    onError={() => console.log('Login Failed')}
+    cookiePolicy={'single_host_origin'}
+    className="w-full flex items-center justify-center p-3 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-200 transition"
+  />
+</GoogleOAuthProvider>
+
 
         <p className="text-center text-gray-600 mt-4">
           Nouveau client ?{" "}
