@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from "react-toastify"; 
 import { FaShoppingCart, FaStar, FaRegStar, FaStarHalfAlt, FaTruck, FaShieldAlt, FaHeart, FaPlus, FaMinus } from "react-icons/fa";
+import { FaArrowLeft, FaArrowRight, FaCartPlus, FaTags } from "react-icons/fa";
+
 
 function Details() {
   const { id } = useParams();
@@ -11,8 +13,23 @@ function Details() {
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState("");
   const [recommendations, setRecommendations] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+const itemsPerPage = 4; // wla 2/3, 7asb l design
+
   const navigate = useNavigate(); // Add navigate for routing
 
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+  
+  const handleNext = () => {
+    if (currentIndex < recommendations.length - itemsPerPage) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+  
   // Fetch product details
   useEffect(() => {
     const fetchProduct = async () => {
@@ -215,45 +232,71 @@ function Details() {
       </div>
 
       {/* Recommendations Section */}
-      <div className="w-full max-w-6xl mt-10">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Related Items</h2>
-        {loading ? (
-          <p className="text-gray-600">Loading recommendations...</p>
-        ) : recommendations.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            {recommendations.map((rec) => (
-              <div key={rec._id} className="bg-white border p-4 rounded-lg shadow-lg hover:shadow-xl transition">
-                {rec.discount && (
-                  <span className="bg-red-600 text-white px-2 py-1 text-xs rounded-md absolute top-2 right-2">
-                    -{rec.discount}%
-                  </span>
-                )}
-                <img
-                  src={rec.image || "http://localhost:5000/uploads/default-image.jpg"}
-                  alt={rec.name}
-                  className="h-40 w-full object-cover rounded mb-4"
-                />
-                <h3 className="font-semibold text-lg">{rec.name}</h3>
-                <div className="flex items-center space-x-2 mt-2">
-                  {renderStars(rec.rating)}
-                  <span className="text-gray-500 text-sm">({rec.reviews})</span>
-                </div>
-                <p className="font-bold text-blue-600 mt-2">
-                  ${rec.discountPrice || rec.price}
-                  {rec.discountPrice && (
-                    <span className="line-through text-gray-500 text-sm ml-2">${rec.price}</span>
-                  )}
-                </p>
-                <button className="bg-blue-500 text-white px-6 py-2 rounded-md font-bold mt-4 w-full hover:bg-blue-600 transition duration-300">
-                  Add to Cart
-                </button>
-              </div>
-            ))}
+      <div className="w-full max-w-6xl mt-16">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-3xl font-extrabold text-gray-800 flex items-center gap-2">
+      <FaTags className="text-red-500" />
+      Related Items
+    </h2>
+    <div className="space-x-4">
+      <button
+        onClick={handlePrev}
+        className="p-2 bg-gray-200 rounded-full text-xl text-gray-700 hover:bg-gray-300 disabled:opacity-30 transition"
+        disabled={currentIndex === 0}
+      >
+        <FaArrowLeft />
+      </button>
+      <button
+        onClick={handleNext}
+        className="p-2 bg-gray-200 rounded-full text-xl text-gray-700 hover:bg-gray-300 disabled:opacity-30 transition"
+        disabled={currentIndex >= recommendations.length - itemsPerPage}
+      >
+        <FaArrowRight />
+      </button>
+    </div>
+  </div>
+
+  {loading ? (
+    <p className="text-gray-600">Loading recommendations...</p>
+  ) : recommendations.length > 0 ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {recommendations
+        .slice(currentIndex, currentIndex + itemsPerPage)
+        .map((rec) => (
+          <div
+            key={rec._id}
+            className="bg-white border rounded-lg shadow-md hover:shadow-xl transition-transform transform hover:scale-105 p-4 flex flex-col"
+          >
+            <img
+              src={rec.image || "http://localhost:5000/uploads/default-image.jpg"}
+              alt={rec.name}
+              className="h-40 w-full object-cover rounded mb-3"
+            />
+            <h3 className="font-semibold text-lg text-gray-800">{rec.name}</h3>
+            <div className="flex items-center space-x-2 mt-2">
+              {renderStars(rec.rating)}
+              <span className="text-gray-500 text-sm">({rec.reviews})</span>
+            </div>
+            <p className="font-bold text-red-500 mt-2">
+              ${rec.discountPrice || rec.price}
+              {rec.discountPrice && (
+                <span className="line-through text-gray-500 text-sm ml-2">
+                  ${rec.price}
+                </span>
+              )}
+            </p>
+            <button className="mt-auto bg-blue-600 text-white flex items-center justify-center gap-2 px-4 py-2 rounded-md font-semibold hover:bg-blue-700 transition duration-300 mt-4">
+              <FaCartPlus />
+              Add to Cart
+            </button>
           </div>
-        ) : (
-          <p className="text-gray-600">No related items found.</p>
-        )}
-      </div>
+        ))}
+    </div>
+  ) : (
+    <p className="text-gray-600">No related items found.</p>
+  )}
+</div>
+
     </div>
   );
 }

@@ -11,6 +11,8 @@ import { GrValidate } from "react-icons/gr";
 import NewArrival from "../componentes/NewArrival";
 import Pagination from "../componentes/Pagination";
 import CategoryLinks from "../componentes/CategoryLinks";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+
 function Home() {
   const { fetchProduct, products } = useProductStore();
   const [personalizedProducts, setPersonalizedProducts] = useState([]);
@@ -22,6 +24,29 @@ function Home() {
   const [currentPage, setCurrentPage] = useState(1); 
   const [productsPerPage] = useState(8); 
   const [currentSlide, setCurrentSlide] = useState(0); 
+  const [personalizedPage, setPersonalizedPage] = useState(0);
+  const personalizedPerPage = 4;
+
+  const paginatedPersonalized = personalizedProducts.slice(
+    personalizedPage * personalizedPerPage,
+    (personalizedPage + 1) * personalizedPerPage
+  );
+  
+  const nextPersonalized = () => {
+    setPersonalizedPage((prev) =>
+      (prev + 1) * personalizedPerPage >= personalizedProducts.length
+        ? 0
+        : prev + 1
+    );
+  };
+  
+  const prevPersonalized = () => {
+    setPersonalizedPage((prev) =>
+      prev === 0
+        ? Math.floor((personalizedProducts.length - 1) / personalizedPerPage)
+        : prev - 1
+    );
+  };
   
   
   // Banner slides data
@@ -307,8 +332,9 @@ useEffect(() => {
             {!userRole ? (
   <div className="bg-gray-200 py-12">
     <div className="text-center">
-      <h3 className="text-3xl font-bold text-gray-800 mb-4">Explore Our Popular Products</h3>
-      <p className="text-lg text-gray-600 mb-6">We have a wide selection of quality items. Click below to start exploring!</p>
+    <h3 className="text-3xl font-bold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-4">
+    Explore Our Popular Products
+  </h3>      <p className="text-lg text-gray-600 mb-6">We have a wide selection of quality items. Click below to start exploring!</p>
       <Link to="/register" className="bg-yellow-500 text-white px-6 py-3 rounded-full text-lg shadow-md hover:bg-yellow-600 transition duration-300">
         Get Started
       </Link>
@@ -323,8 +349,41 @@ useEffect(() => {
   </div>
 )}
 </div>
+{/* Personalized Recommendations Section */}
+{personalizedProducts && personalizedProducts.length > 0 && (
+  <div className="mt-16 relative">
+ <h2 className="text-4xl font-extrabold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-8">
+  Pour Vous
+</h2>
 
-            <h2 className="text-4xl font-extrabold text-gray-800 mb-8">This Month</h2>
+  {/* Arrows Navigation */}
+  <button
+    onClick={prevPersonalized}
+    className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow rounded-full p-2 hover:bg-gray-200"
+  >
+    <FaArrowLeft className="text-xl text-gray-700" /> {/* استخدام الأيقونة الجديدة */}
+  </button>
+
+  {/* Products Grid */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    {paginatedPersonalized.map((product) => (
+      <ProductCard key={product._id} product={product} userRole={userRole} />
+    ))}
+  </div>
+
+  <button
+    onClick={nextPersonalized}
+    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow rounded-full p-2 hover:bg-gray-200"
+  >
+    <FaArrowRight className="text-xl text-gray-700" /> {/* استخدام الأيقونة الجديدة */}
+  </button>
+</div>
+
+)}<br/>
+
+
+
+<h2 className="text-4xl font-extrabold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-8">This Month</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
               {currentProducts.map((product) => (
                 <div key={product._id} className="relative">
@@ -340,24 +399,8 @@ useEffect(() => {
               paginate={paginate}
             /><br/>
             {/* Personalized Recommendations */}
-{/* Personalized Recommendations Section */}
-{personalizedProducts && personalizedProducts.length > 0 ? (
-  <div className="mt-16">
-    <h2 className="text-4xl font-extrabold text-gray-800 mb-8">Pour Vous</h2>
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-      {personalizedProducts.map((product) => (
-        <div key={product._id} className="relative">
-          <ProductCard product={product} userRole={userRole} />
-        </div>
-      ))}
-    </div>
-  </div>
-) : userRole ? (
-  <div className="mt-16">
-    <h2 className="text-4xl font-extrabold text-gray-800 mb-8">Recommendations</h2>
-    <p className="text-gray-600">Loading your personalized recommendations...</p>
-  </div>
-) : null}
+
+
 
          <NewArrival />
     {/* New Section for Features */}

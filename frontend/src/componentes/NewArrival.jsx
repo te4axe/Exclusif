@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
  function NewArrival() {
     return (
            <div className="max-w-7xl mx-auto text-center px-6 md:px-12">
-          <h2 className="text-4xl font-extrabold text-gray-800 mb-8">New Arrival</h2>
+          <h2 className="text-4xl font-extrabold bg-gradient-to-r from-red-500 via-orange-500 to-orange-400 text-transparent bg-clip-text mb-8">New Arrival</h2>
         
           <div className="flex mb-12 space-x-8">
             {/* PlayStation 5 Section */}
