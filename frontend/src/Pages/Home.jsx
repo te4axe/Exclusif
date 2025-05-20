@@ -11,6 +11,7 @@ import { GrValidate } from "react-icons/gr";
 import NewArrival from "../componentes/NewArrival";
 import Pagination from "../componentes/Pagination";
 import SidebarProductFilter from "../componentes/ProductFilter";
+import Chatbot from "./Chatbot"; // Import the Chatbot component
 
 function Home() {
   // State and store hooks
@@ -224,6 +225,10 @@ function Home() {
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
       <ToastContainer position="top-right" autoClose={3000} />
+      
+      {/* Add Chatbot component here */}
+      <Chatbot userRole={userRole} products={products} />
+      
       <div className="flex flex-col md:flex-row">
         {/* Left side categories - Hidden on mobile */}
         <div className="hidden md:block md:w-1/5 border-r border-gray-200 p-4 bg-white">

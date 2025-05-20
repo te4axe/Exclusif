@@ -295,6 +295,7 @@ def personalized_recommend():
         top_products = convert_objectid_to_str(unique_products)
         
         # Return top 10 or all if less than 10
+
         top_products = top_products[:10]
         
         return jsonify(top_products)
